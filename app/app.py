@@ -7,23 +7,11 @@ Author: Blossom Academy
 Course: Data Science Capstone Projects
 """
 
-# Auto-patch PyCaret for Python 3.12 compatibility
-import sys
 import os
-
-# Add the app directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-# Try to patch PyCaret before importing it
-try:
-    from patch_pycaret import patch_pycaret
-    patch_pycaret()
-except Exception as e:
-    print(f"Warning: Could not auto-patch PyCaret: {e}")
-
+import sys
 import streamlit as st
 import pandas as pd
-from pycaret.classification import load_model, predict_model
+import joblib
 
 # Page config
 st.set_page_config(
@@ -35,6 +23,35 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
     <style>
+    /* Dark blue background for entire app */
+    .stApp {
+        background-color: #0a1628;
+    }
+    /* Main content area */
+    .main .block-container {
+        background-color: #0a1628;
+    }
+    /* Sidebar background */
+    [data-testid="stSidebar"] {
+        background-color: #0d1f3c;
+    }
+    /* General text color */
+    .stApp, .stApp p, .stApp label, .stApp div {
+        color: #e8eaf6;
+    }
+    /* Metric labels and values */
+    [data-testid="stMetricLabel"], [data-testid="stMetricValue"] {
+        color: #e8eaf6 !important;
+    }
+    /* Input widgets text */
+    .stSelectbox label, .stRadio label, .stSlider label,
+    .stNumberInput label, .stCheckbox label {
+        color: #e8eaf6 !important;
+    }
+    /* Headers */
+    h1, h2, h3, h4, h5, h6 {
+        color: #ffffff !important;
+    }
     .main-title {
         font-size: 2.5rem;
         color: #D32F2F;
@@ -43,7 +60,7 @@ st.markdown("""
     }
     .subtitle {
         font-size: 1.1rem;
-        color: #555;
+        color: #90caf9;
         text-align: center;
         margin-bottom: 2rem;
     }
@@ -87,12 +104,9 @@ st.markdown("""
 # Load model
 @st.cache_resource
 def load_trained_model():
-    import os
-    # Get the absolute path to the models directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    models_dir = os.path.join(current_dir, '..', 'models')
-    model_path = os.path.join(models_dir, 'malaria_risk_model')
-    return load_model(model_path)
+    model_path = os.path.join(current_dir, "..", "models", "malaria_risk_model.pkl")
+    return joblib.load(model_path)
 
 model = load_trained_model()
 
@@ -195,7 +209,9 @@ if st.sidebar.button("🔬 Predict Malaria Risk", type="primary"):
     })
     
     # Make prediction
-    prediction = predict_model(model, data=input_data)
+    pred_label = int(model.predict(input_data)[0])
+    pred_proba = model.predict_proba(input_data)[0]
+    prediction = pd.DataFrame({"prediction_label": [pred_label], "prediction_score": [pred_proba[pred_label]]})
     
     # Display results
     st.markdown("---")
@@ -339,6 +355,3 @@ st.markdown("""
         🏥 Built for Nigerian Healthcare | Blossom Academy Data Science Project
     </p>
 """, unsafe_allow_html=True)
-
-
-
